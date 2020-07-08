@@ -98,21 +98,53 @@ async function getRovers()
     return rovers;
 }
 
-async function getPhotos(rover : Rover, cameraName : string)
+async function getPhotos(rover : Rover, camera : Camera)
 {
     console.log("da");
-    const url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?sol=1000&camera=" + cameraName + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
+    const url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?sol=1000&camera=" + camera.name + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
     const response = await axios.get(url);
     return response.data;
 }
 
-let rovers : Rover[];
+async function fetchPhotos(req, res)
+{
+    const rover : Rover = getRoverByName(req.params.rovername);
+    const camera : Camera = getRoverCameraByName(rover, req.params.cameraname);
+    res.send(await getPhotos(rover, camera));
+}
+
+
+let rovers : Rover[] = [];
+
+function getRoverByName(roverName : string)
+{
+    let i : number;
+    for(i = 0; i < rovers.length; i++)
+    {
+        if(rovers[i].name.toLowerCase() == roverName.toLowerCase())
+            return rovers[i];
+    }
+}
+
+function getRoverCameraByName(rover : Rover, cameraName : string)
+{
+    let i : number;
+    for(i = 0; i < rover.cameras.length; i++)
+    {
+        if(rover.cameras[i].name.toLowerCase() == cameraName.toLowerCase())
+        {
+            return rover.cameras[i];
+        }
+    }
+}
 
 app.use(express.json());
 const router = express.Router();
 router.get('/test', (req, res) => res.send('Hello world !'));
+
 router.get('/rover', async (req, res) =>  {rovers = await getRovers(); res.send("Rover data updated");});
-router.get('/rover/photos', async (req, res) => res.send(await getPhotos(rovers[0], cameras.fhaz)));
+router.get('/rover/:rovername/photos/:cameraname', fetchPhotos);
+
 app.use('/', router);
 
 app.listen(port, () => {

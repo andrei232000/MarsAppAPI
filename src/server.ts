@@ -74,7 +74,6 @@ async function getRovers()
     for(i = 0; i < response.data.rovers.length; i++) {
         let cameras: Camera[] = [];
         let j: number;
-        console.log(response.data.rovers.length);
         for (j = 0; j < response.data.rovers[i].cameras.length; j++) {
             cameras.push(new Camera(
                 response.data.rovers[i].cameras[j].id,
@@ -98,10 +97,9 @@ async function getRovers()
     return rovers;
 }
 
-async function getPhotos(rover : Rover, camera : Camera)
+async function getPhotos(rover : Rover, camera : Camera, sol : number, page : number)
 {
-    console.log("da");
-    const url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?sol=1000&camera=" + camera.name + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
+    const url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?camera=" + camera.name + "&sol=" + sol.toString() + "&page=" + page.toString() + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
     const response = await axios.get(url);
     return response.data;
 }
@@ -110,7 +108,11 @@ async function fetchPhotos(req, res)
 {
     const rover : Rover = getRoverByName(req.params.rovername);
     const camera : Camera = getRoverCameraByName(rover, req.params.cameraname);
-    res.send(await getPhotos(rover, camera));
+    let sol : number = req.query.sol;
+    let page : number = req.query.page;
+    if(sol == undefined) sol = 0;
+    if(page == undefined) page = 1;
+    res.send(await getPhotos(rover, camera, sol, page));
 }
 
 

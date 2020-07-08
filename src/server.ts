@@ -97,10 +97,21 @@ async function getRovers()
     return rovers;
 }
 
-async function getPhotos(rover : Rover, camera : Camera, sol : number, page : number)
+async function getPhotos(rover : Rover, camera : Camera, sol : number, start : number, end : number)
 {
-    const url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?camera=" + camera.name + "&sol=" + sol.toString() + "&page=" + page.toString() + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
-    const response = await axios.get(url);
+    let i : number;
+    let url : string = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?camera=" + camera.name + "&sol=" + sol.toString() + "&page=" + start.toString() + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
+    let response = await axios.get(url);
+    for(i = start + 1; i < end; i++)
+    {
+        url = "https://api.nasa.gov/mars-photos/api/v1/rovers/" + rover.name + "/photos?camera=" + camera.name + "&sol=" + sol.toString() + "&page=" + i.toString() + "&api_key=T3IzvNLZcIrfAhadiAhmbDOu3DYlbpvkb0m78sfi";
+        const responseAux = await axios.get(url);
+        let j : number;
+        for(j = 0; j < responseAux.data.photos.length; j++)
+        {
+            response.data.photos.push(responseAux.data.photos[j]);
+        }
+    }
     return response.data;
 }
 
@@ -110,9 +121,35 @@ async function fetchPhotos(req, res)
     const camera : Camera = getRoverCameraByName(rover, req.params.cameraname);
     let sol : number = req.query.sol;
     let page : number = req.query.page;
+    let paginationStart : number = req.query.paginationStart;
+    let paginationEnd : number = req.query.paginationEnd;
     if(sol == undefined) sol = 0;
-    if(page == undefined) page = 1;
-    res.send(await getPhotos(rover, camera, sol, page));
+    if(page == undefined)
+    {
+        if(paginationStart == undefined || paginationEnd == 0)
+        {
+            page = 0;
+            paginationStart = 0;
+            paginationEnd = 0;
+        }
+        else
+        {
+            page = 0;
+        }
+    }
+    else
+    {
+        paginationStart = page;
+        paginationEnd = page;
+    }
+
+    let i : number;
+    /*for(i = paginationStart + 1; i <= paginationEnd; i++)
+    {
+        let response = await getPhotos(rover, camera, sol, i);
+        photos.data.photos = photos.data.photos.concat(response.data.photos);
+    }*/
+    res.send(await getPhotos(rover, camera, sol, paginationStart, paginationEnd));
 }
 
 
